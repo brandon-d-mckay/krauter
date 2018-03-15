@@ -1,7 +1,7 @@
 # krauter
 *krauter* allows you to quickly create data-backed web services by configuring an *Express* router with a database connection and automatically producing parameterized query middleware from strings.
 
-It currently supports hassle-free integration with PostgreSQL ([*pg*](github.com/brianc/node-postgres)), MySQL ([*mysql*](github.com/mysqljs/mysql)), SQL Server ([*mssql*](github.com/tediousjs/node-mssql)), and SQLite ([*sqlite3*](github.com/mapbox/node-sqlite3)).
+It currently supports hassle-free integration with PostgreSQL ([*pg*](https://github.com/brianc/node-postgres)), MySQL ([*mysql*](https://github.com/mysqljs/mysql)), SQL Server ([*mssql*](https://github.com/tediousjs/node-mssql)), and SQLite ([*sqlite3*](https://github.com/mapbox/node-sqlite3)).
 
 ## Installation
 
