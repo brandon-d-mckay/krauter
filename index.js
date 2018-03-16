@@ -75,8 +75,15 @@ methods.forEach(method => Krauter.prototype[method] = function(... args) {
 				next();
 			}
 		}
+
+		else if(typeof arg === "number") {
+			return (req, res, next) => {
+				res.status(arg);
+				next();
+			}
+		}
 		
-		return arg;
+		else return arg;
 	}));
 });
 

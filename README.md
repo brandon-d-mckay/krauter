@@ -6,7 +6,7 @@ It currently supports hassle-free integration with PostgreSQL ([*pg*](https://gi
 ## Installation
 
 ```shell
-npm install --save krauterjs
+npm install --save krauter
 ```
 
 And depending on which DBMS is being used: 
@@ -23,7 +23,7 @@ npm install --save sqlite3
 Each `Krauter` must be created with a supplied *executor* function that simply takes a query along with an array of parameter values (and optionally an array of corresponding datatypes) and returns a Promise for its results (or an error if one occurs). *krauter* has predefined executors available for supported DBMSs. These can be accessed by calling `krauter.DBMS.executor` (where `DBMS` is the DBMS package name) with a connection/pool of corresponding type, which will return an executor configured to run queries on the specified connection/pool.
 
 ```javascript
-const krauter = require("krauterjs");
+const krauter = require("krauter");
 const mysql = require("mysql");
 
 // Create database connection pool
@@ -40,7 +40,7 @@ const api = krauter(krauter.mysql.executor(pool));
 
 ## Usage
 
-A `Krauter` works the same as a normal *Express* router, but with the added capabilities of recognizing strings and objects (intermixed among middleware functions) as an intent to query a database. 
+A `Krauter` works the same as a normal *Express* router, but with the added capability of its HTTP methods taking various argument types and replacing them with middleware. Strings and objects are interpreted as database queries, unary functions treated as transformations of `req.data`, and numbers will be used to set the HTTP response status code. 
 
 ### Queries
 
@@ -56,7 +56,7 @@ When an object is encountered, each of its properties' values will be treated as
 api.get("/search", {categories: "SELECT * FROM categories", merchants: "SELECT * FROM merchants"});
 ```
 
-### Parameters
+#### Parameters
 
 JavaScript values can be specified within query strings and they will automatically be inserted to form a parameterized query (preventing SQL injection). Values may be any recursive property of the `req` object and are denoted in dot notation within surrounding colons.
 
@@ -68,6 +68,22 @@ For DBMSs that typically have datatypes specified for parameters (such as *mssql
 
 ```javascript
 api.patch("/products", authorize, "INSERT INTO products VALUES(:{VarChar(45)}body.name:, :{Int}body.merchant:)"); 
+```
+
+### Transformations of `req.data`
+
+When a unary function is encountered, it is replaced with a middleware function that will call it with `req.data` as the argument and then subsequently set `req.data` to the returned value.
+
+```javascript
+api.get("/products/:id/", "SELECT * FROM products WHERE id = :params.id:", {modified, ... rest} => {modified: new Date(modified * 1000).toTimeString(), ... rest});
+```
+
+### HTTP Response Status Codes
+
+When a number is encountered, it is replaced with a middleware function that will set it as the response's status code.
+
+```javascript
+api.delete("/products/:id", authorize, "DELETE FROM products WHERE id = :params.id:", 204);
 ```
 
 ### Automatic Responses
