@@ -75,7 +75,7 @@ api.patch("/products", authorize, "INSERT INTO products VALUES(:{VarChar(45)}bod
 When a unary function is encountered, it is replaced with a middleware function that will call it with `req.data` as the argument and then subsequently set `req.data` to the returned value.
 
 ```javascript
-api.get("/products/:id", "SELECT * FROM products WHERE id = :params.id:", {modified, ... rest} => {modified: new Date(modified * 1000).toTimeString(), ... rest});
+api.get("/products/:id", "SELECT * FROM products WHERE id = :params.id:", ({modified, ... rest}) => ({modified: new Date(modified * 1000).toTimeString(), ... rest}));
 ```
 
 ### HTTP Response Status Codes
