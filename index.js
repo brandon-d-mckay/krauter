@@ -87,7 +87,7 @@ methods.forEach(method => Krauter.prototype[method] = function(... args) {
 
 function replace(query, req, values = [], types = []) {
 	return [
-		query.replace(/(?:^|[^:]):(?:\((\w+)\))?([\w]+(?:\.[\w]+)*):/g, (match, type, reference) =>
+		query.replace(/(?:^|[^:]):(?:{([\w()]+)})?([\w]+(?:\.[\w]+)*):/g, (match, type, reference) =>
 			"?v" + (0&types.push(type) || values.push(reference.split(".").reduce((o, p) => o[p], req)) - 1) + "?"
 		),
 		values,
@@ -100,13 +100,13 @@ module.exports = (... args) => new Krauter(... args);
 Object.assign(module.exports, {
 	pg: {
 		executor: conn => (query, values) =>
-			conn.query(query.replace(/\?(?:\(\w+\))?v(\d+)\?/g, '$$$1'), values)
+			conn.query(query.replace(/\?(?:{[\w()]+})?v(\d+)\?/g, '$$$1'), values)
 	},
 	
 	mysql: {
 		executor: conn => (query, values) =>
 			new Promise((resolve, reject) => {
-				conn.query(query.replace(/\?(\(\w+\))?v\d+\?/g, '?'), values, (err, results, fields) =>
+				conn.query(query.replace(/\?({[\w()]+})?v\d+\?/g, '?'), values, (err, results, fields) =>
 					err ? reject(err) : resolve({results: results, fields: fields})
 				);
 			})
@@ -118,8 +118,8 @@ Object.assign(module.exports, {
 			
 			return (query, values, types) => {
 				const request = conn.request();
-				for(let i = 0; i < values.length; i++) request.input("v" + i, ... (types[i] ? [global[privates].mssql[types[i]], values[i]] : [values[i]]));
-				return request.query(query.replace(/\?(\(\w+\))?(v\d+)\?/g, '@$1'));
+				for(let i = 0; i < values.length; i++) request.input("v" + i, ... (types[i] ? [eval("global[privates].mssql." + types[i]), values[i]] : [values[i]]));
+				return request.query(query.replace(/\?({[\w()]+})?(v\d+)\?/g, '@$1'));
 			};
 		}
 	},
@@ -127,7 +127,7 @@ Object.assign(module.exports, {
 	sqlite3: {
 		executor: conn => (query, values) =>
 			new Promise((resolve, reject) => {
-				conn.query(query.replace(/\?(\(\w+\))?v\d+\?/g, '?'), values, (err, rows) =>
+				conn.query(query.replace(/\?({[\w()]+})?v\d+\?/g, '?'), values, (err, rows) =>
 					err ? reject(err) : resolve(rows)
 				);
 			})
