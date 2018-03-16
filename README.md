@@ -1,5 +1,5 @@
 # krauter
-*krauter* allows you to quickly create data-backed web services by configuring an *Express* router with a database connection and automatically producing parameterized query middleware from strings.
+*krauter* allows you to quickly create data-backed web services by configuring an *Express* router with a database connection and automatically producing parameterized query middleware from strings and objects. Similar functionality is offered for unary functions (used to transform `req.data`) and numbers (used to set the HTTP response status code). 
 
 It currently supports hassle-free integration with PostgreSQL ([*pg*](https://github.com/brianc/node-postgres)), MySQL ([*mysql*](https://github.com/mysqljs/mysql)), SQL Server ([*mssql*](https://github.com/tediousjs/node-mssql)), and SQLite ([*sqlite3*](https://github.com/mapbox/node-sqlite3)).
 
@@ -20,7 +20,7 @@ npm install --save sqlite3
 
 ## Configuration
 
-Each `Krauter` must be created with a supplied *executor* function that simply takes a query along with an array of parameter values (and optionally an array of corresponding datatypes) and returns a Promise for its results (or an error if one occurs). *krauter* has predefined executors available for supported DBMSs. These can be accessed by calling `krauter.DBMS.executor` (where `DBMS` is the DBMS package name) with a connection/pool of corresponding type, which will return an executor configured to run queries on the specified connection/pool.
+Each `Krauter` must be created with a supplied *executor* function that simply takes a query along with an array of parameter values (and optionally an array of corresponding datatypes) and returns a Promise for its results (or an error if one occurs). *krauter* has predefined executors available for supported DBMSs. These can be accessed by calling `krauter.DBMS.executor` (where `DBMS` is the DBMS package name) with a corresponding connection/pool and will return an executor configured to run queries on the specified connection/pool.
 
 ```javascript
 const krauter = require("krauter");
@@ -40,7 +40,7 @@ const api = krauter(krauter.mysql.executor(pool));
 
 ## Usage
 
-A `Krauter` works the same as a normal *Express* router, but with the added capability of its HTTP methods taking various argument types and replacing them with middleware. Strings and objects are interpreted as database queries, unary functions treated as transformations of `req.data`, and numbers will be used to set the HTTP response status code. 
+A `Krauter` works the same as a normal *Express* router, but with the added capability of its HTTP methods taking various argument types and replacing them with middleware. 
 
 ### Queries
 
@@ -75,7 +75,7 @@ api.patch("/products", authorize, "INSERT INTO products VALUES(:{VarChar(45)}bod
 When a unary function is encountered, it is replaced with a middleware function that will call it with `req.data` as the argument and then subsequently set `req.data` to the returned value.
 
 ```javascript
-api.get("/products/:id/", "SELECT * FROM products WHERE id = :params.id:", {modified, ... rest} => {modified: new Date(modified * 1000).toTimeString(), ... rest});
+api.get("/products/:id", "SELECT * FROM products WHERE id = :params.id:", {modified, ... rest} => {modified: new Date(modified * 1000).toTimeString(), ... rest});
 ```
 
 ### HTTP Response Status Codes
