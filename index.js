@@ -30,7 +30,7 @@ class Krauter {
 		
 		krauter[privates] = {
 			router: express.Router(options),
-			execute,
+			execute
 		};
 		
 		Object.setPrototypeOf(krauter, Krauter.prototype);
