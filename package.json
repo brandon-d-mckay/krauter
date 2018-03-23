@@ -1,6 +1,6 @@
 {
   "name": "krauter",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "An Express router for quickly creating data-driven web services",
   "author": "Brandon D. McKay",
   "license": "MIT",
