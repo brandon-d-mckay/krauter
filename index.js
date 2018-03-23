@@ -9,8 +9,8 @@ const privates = Symbol();
 class Kraut {
 	constructor(krauter, path) {
 		this[privates] = {
-			krauter: krauter,
-			path: path
+			krauter,
+			path
 		};
 	}
 }
@@ -22,15 +22,15 @@ methods.forEach(method =>
 });
 
 class Krauter {
-	constructor(execute, options = {}) {
+	constructor(execute, options) {
 		const krauter = (req, res, next) => krauter[privates].router.handle(req, res, err => {
-			if(!err && req.data) res.status(200).send(req.data);
+			if(!err && req.data) res.send(req.data);
 			else next(err);
 		});
 		
 		krauter[privates] = {
 			router: express.Router(options),
-			execute: execute,
+			execute,
 		};
 		
 		Object.setPrototypeOf(krauter, Krauter.prototype);
@@ -47,11 +47,11 @@ methods.forEach(method => Krauter.prototype[method] = function(... args) {
 	const path = args.shift();
 	if(typeof path !== "string") throw Error("You must specify a route path.");
 	
-	return this[privates].router[method](path, args.map(arg => {
+	this[privates].router[method](path, args.map(arg => {
 		if(typeof arg === "string") {
 			return (req, res, next) => {
-				this[privates].execute(... replace(arg, req)).then(results => {
-					req.data = results;
+				this[privates].execute(... replace(arg, req)).then(result => {
+					req.data = result;
 					next();
 				}).catch(next);
 			};
@@ -59,19 +59,22 @@ methods.forEach(method => Krauter.prototype[method] = function(... args) {
 		
 		else if(typeof arg === "object") {
 			return (req, res, next) => {
-				req.data = {};
+				const results = {};
 				
 				Promise.all(Object.keys(arg).map(key =>
-					this[privates].execute(... replace(arg[key], req)).then(results => {
-						req.data[key] = results;
+					this[privates].execute(... replace(arg[key], req)).then(result => {
+						results[key] = result;
 					}))
-				).then(() => next()).catch(next);
+				).then(ignore => {
+					req.data = results;
+					next();
+				}).catch(next);
 			};
 		}
 		
 		else if(typeof arg === "function" && arg.length === 1) {
-			return (req, res, next) => {
-				req.data = arg(req.data);
+			return ({data, ... req}, res, next) => {
+				req.data = arg({req, res, data});
 				next();
 			}
 		}
@@ -85,6 +88,8 @@ methods.forEach(method => Krauter.prototype[method] = function(... args) {
 		
 		else return arg;
 	}));
+	
+	return this;
 });
 
 ["use", "param"].forEach(method =>
@@ -114,7 +119,7 @@ Object.assign(module.exports, {
 		executor: conn => (query, values) =>
 			new Promise((resolve, reject) => {
 				conn.query(query.replace(/\?({[\w()]+})?v\d+\?/g, '?'), values, (err, results, fields) =>
-					err ? reject(err) : resolve({results: results, fields: fields})
+					err ? reject(err) : resolve({results, fields})
 				);
 			})
 	},
