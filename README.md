@@ -81,7 +81,8 @@ The parameters usually found in a middleware function can be defined within a un
 api.get("/orders/:id", 
 	authenticate, 
 	"SELECT * FROM orders WHERE id = :params.id:", 
-	({req, data: {submitted, ... rest}}) => ({submitted: new Date(submitted).toLocaleString(req.user.language, {timeZone: req.user.timeZone}), ... rest}));
+	({req, res, data: [{confirmed, ... rest}]}) => 
+		({confirmed: new Date(confirmed).toLocaleString(req.user.language, {timeZone: req.user.timeZone}), ... rest}));
 ```
 
 ### HTTP Response Status Codes
