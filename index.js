@@ -1,9 +1,5 @@
 const express = require("express");
-
-const methods = ["all", "checkout", "copy", "delete", "get", "head", "lock", "merge",
-	"mkactivity", "mkcol", "move", "m-search", "notify", "options", "patch", "post",
-	"purge", "put", "report", "search", "subscribe", "trace", "unlock", "unsubscribe"];
-
+const methods = require("methods").concat("all");
 const privates = Symbol();
 
 class Kraut {
@@ -73,7 +69,9 @@ methods.forEach(method => Krauter.prototype[method] = function(... args) {
 		}
 		
 		else if(typeof arg === "function" && arg.length === 1) {
-			return ({data, ... req}, res, next) => {
+			return (req, res, next) => {
+				const data = req.data;
+				delete req.data;
 				req.data = arg({req, res, data});
 				next();
 			}
@@ -99,8 +97,8 @@ methods.forEach(method => Krauter.prototype[method] = function(... args) {
 
 function replace(query, req, values = [], types = []) {
 	return [
-		query.replace(/(?:^|[^:]):(?:{([\w()]+)})?([\w]+(?:\.[\w]+)*):/g, (match, type, reference) =>
-			"?v" + (0&types.push(type) || values.push(reference.split(".").reduce((o, p) => o[p], req)) - 1) + "?"
+		query.replace(/(^|[^:]):(?:{([\w()]+)})?([\w]+(?:\.[\w]+)*):/g, (match, precedingChar, type, reference) =>
+			precedingChar + "?v" + (0&types.push(type) || values.push(reference.split(".").reduce((o, p) => o[p], req)) - 1) + "?"
 		),
 		values,
 		types
@@ -110,38 +108,44 @@ function replace(query, req, values = [], types = []) {
 module.exports = (... args) => new Krauter(... args);
 
 Object.assign(module.exports, {
-	pg: {
-		executor: conn => (query, values) =>
-			conn.query(query.replace(/\?(?:{[\w()]+})?v(\d+)\?/g, '$$$1'), values)
-	},
+	pg: (conn, options) =>
+		module.exports(
+			(query, values) => conn.query(query.replace(/\?(?:{[\w()]+})?v(\d+)\?/g, '$$$1'), values),
+			options
+		)
+	,
 	
-	mysql: {
-		executor: conn => (query, values) =>
-			new Promise((resolve, reject) => {
+	mysql: (conn, options) =>
+		module.exports(
+			(query, values) => new Promise((resolve, reject) =>
 				conn.query(query.replace(/\?({[\w()]+})?v\d+\?/g, '?'), values, (err, results, fields) =>
-					err ? reject(err) : resolve({results, fields})
-				);
-			})
-	},
+					err ? reject(err) : resolve(Object.assign(results, {fields}))
+				)
+			),
+			options
+		)
+	,
 	
-	mssql: {
-		executor: (conn, mssql) => {
-			global[privates].mssql = global[privates].mssql || mssql || require("mssql");
-			
-			return (query, values, types) => {
+	mssql: (conn, options) => {
+		global[privates].mssql = global[privates].mssql || (options && options.mssql) || require("mssql");
+		
+		return module.exports(
+			(query, values, types) => {
 				const request = conn.request();
 				for(let i = 0; i < values.length; i++) request.input("v" + i, ... (types[i] ? [eval("global[privates].mssql." + types[i]), values[i]] : [values[i]]));
 				return request.query(query.replace(/\?({[\w()]+})?(v\d+)\?/g, '@$1'));
-			};
-		}
+			},
+			options
+		);
 	},
 	
-	sqlite3: {
-		executor: conn => (query, values) =>
-			new Promise((resolve, reject) => {
+	sqlite3: (conn, options) =>
+		module.exports(
+			(query, values) => new Promise((resolve, reject) =>
 				conn.query(query.replace(/\?({[\w()]+})?v\d+\?/g, '?'), values, (err, rows) =>
 					err ? reject(err) : resolve(rows)
-				);
-			})
-	}
+				)
+			),
+			options
+		)
 });

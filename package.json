@@ -1,7 +1,7 @@
 {
   "name": "krauter",
-  "version": "2.0.1",
-  "description": "An Express router for quickly creating data-driven web services",
+  "version": "3.0.0",
+  "description": "An Express router that generates middleware for quickly creating data-driven web services",
   "author": "Brandon D. McKay",
   "license": "MIT",
   "repository": {
@@ -9,7 +9,8 @@
     "url": "git+https://github.com/brandon-d-mckay/krauter"
   },
   "dependencies": {
-    "express": "^4.16.2"
+    "express": "^4.16.3",
+    "methods": "^1.1.2"
   },
   "devDependencies": {},
   "main": "index.js",
