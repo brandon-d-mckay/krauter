@@ -28,10 +28,10 @@ const mysql = require('mysql');
 
 // Create database connection pool
 const pool = mysql.createPool({
-	host: process.env.DB_HOST,
-	user: process.env.DB_USER,
-	password: process.env.DB_PASSWORD,
-	database: process.env.DB_NAME
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
 // Create a Krauter
@@ -66,7 +66,7 @@ api.get('/filters', {categories: 'SELECT id, name FROM categories', merchants: '
 
 JavaScript values can be specified within query strings and they will automatically be inserted to form a parameterized query (preventing SQL injection). Values may be any recursive property of the `req` object and are denoted in dot notation within surrounding colons. 
 
-> Note: The `res` object can be accessed at `req.res`
+> Note: The `res` object can be accessed with `req.res`
 
 ```javascript
 api.get('/merchants/:id', 'SELECT * FROM merchants WHERE id = :params.id:');
@@ -76,9 +76,9 @@ For DBMSs that typically have datatypes specified for parameters (such as *mssql
 
 ```javascript
 api.post('/products', 
-	authenticate, 
-	'INSERT INTO products (merchantId, name, price)' +
-	'VALUES (:{Int}user.id:, :{VarChar(45)}body.name:, :{Money}body.price:)');
+    authenticate, 
+    'INSERT INTO products (merchantId, name, price)' +
+    'VALUES (:{Int}user.id:, :{VarChar(45)}body.name:, :{Money}body.price:)');
 ```
 
 ### Transformations of `req.data`
@@ -89,10 +89,10 @@ The parameters usually found in a middleware function can be defined within a un
 
 ```javascript
 api.get('/orders/:id',
-	authenticate,
-	'SELECT * FROM orders WHERE id = :params.id:',
-	({req, res, data: [{confirmedUtc, ... rest}]}) =>
-		({confirmedLocal: new Date(confirmedUtc).toLocaleString(req.user.language, {timeZone: req.user.timeZone}), ... rest}));
+    authenticate,
+    'SELECT * FROM orders WHERE id = :params.id:',
+    ({req, res, data: [{confirmedUtc, ... rest}]}) =>
+        ({confirmedLocal: new Date(confirmedUtc).toLocaleString(req.user.language, {timeZone: req.user.timeZone}), ... rest}));
 ```
 
 ##### Clearing `req.data`
@@ -105,10 +105,10 @@ When a number is encountered, it is replaced with a middleware function that wil
 
 ```javascript
 api.put('/products/:productId/reviews/:userId', 
-	authenticate, 
-	'INSERT INTO reviews (productId, userId, rating, message) ' +
-	'VALUES (:params.productId:, :params.userId:, :body.rating:, :body.message:)',
-	201);
+    authenticate, 
+    'INSERT INTO reviews (productId, userId, rating, message)' +
+    'VALUES (:params.productId:, :params.userId:, :body.rating:, :body.message:)',
+    201);
 ```
 
 ### Automatic Responses
