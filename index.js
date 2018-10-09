@@ -19,8 +19,8 @@ methods.forEach(method =>
 
 class Krauter {
 	constructor(execute, options) {
-		const krauter = (req, res, next) => krauter[privates].router.handle(req, res, err => {
-			if(!err && req.data) res.send(req.data);
+		const krauter = (req, res, next) => krauter[privates].router(req, res, err => {
+			if(!res.finished && err === undefined) res.send(req.data); // `err === null` if `next('router')` was called
 			else next(err);
 		});
 		
@@ -39,14 +39,18 @@ class Krauter {
 	}
 }
 
-methods.forEach(method => Krauter.prototype[method] = function(... args) {
-	const path = args.shift();
-	if(typeof path !== "string") throw Error("You must specify a route path.");
-	
+methods.forEach(method => Krauter.prototype[method] = function(path, ... args) {
 	this[privates].router[method](path, args.map(arg => {
-		if(typeof arg === "string") {
+		if(arg === null) {
 			return (req, res, next) => {
-				this[privates].execute(... replace(arg, req)).then(result => {
+				delete req.data;
+				next();
+			}
+		}
+		
+		else if(typeof arg === "string") {
+			return (req, res, next) => {
+				this[privates].execute(... parse(arg, req)).then(result => {
 					req.data = result;
 					next();
 				}).catch(next);
@@ -58,21 +62,28 @@ methods.forEach(method => Krauter.prototype[method] = function(... args) {
 				const results = {};
 				
 				Promise.all(Object.keys(arg).map(key =>
-					this[privates].execute(... replace(arg[key], req)).then(result => {
+					this[privates].execute(... parse(arg[key], req)).then(result => {
 						results[key] = result;
 					}))
-				).then(ignore => {
+				).then(ignored => {
 					req.data = results;
 					next();
 				}).catch(next);
 			};
 		}
 		
-		else if(typeof arg === "function" && arg.length === 1) {
+		else if(typeof arg === "function" && arg.length <= 1) {
 			return (req, res, next) => {
 				const data = req.data;
-				delete req.data;
-				req.data = arg({req, res, data});
+				req.next = req.data = undefined;
+				
+				try {
+					req.data = arg({req, res, data});
+				}
+				finally {
+					req.next = next;
+				}
+				
 				next();
 			}
 		}
@@ -83,7 +94,7 @@ methods.forEach(method => Krauter.prototype[method] = function(... args) {
 				next();
 			}
 		}
-		
+
 		else return arg;
 	}));
 	
@@ -95,57 +106,55 @@ methods.forEach(method => Krauter.prototype[method] = function(... args) {
 		this[privates].router[method](... args);
 });
 
-function replace(query, req, values = [], types = []) {
+function parse(string, req, values = [], types = []) {
 	return [
-		query.replace(/(^|[^:]):(?:{([\w()]+)})?([\w]+(?:\.[\w]+)*):/g, (match, precedingChar, type, reference) =>
-			precedingChar + "?v" + (0&types.push(type) || values.push(reference.split(".").reduce((o, p) => o[p], req)) - 1) + "?"
+		string.replace(/(^|[^:]):(?:{(\w+)(?:\(([\d, ]*)\))?})?([\w]+(?:\.[\w]+)*):/g, (match, precedingChar, typeProperty, typeArguments, reference) =>
+			precedingChar + "?param" + (0&types.push({property: typeProperty, arguments: typeArguments}) || values.push(reference.split(".").reduce((o, p) => o[p], req))) + "?"
 		),
 		values,
 		types
 	];
 }
 
-module.exports = (... args) => new Krauter(... args);
+const krauter = (... args) => new Krauter(... args);
 
-Object.assign(module.exports, {
-	pg: (conn, options) =>
-		module.exports(
-			(query, values) => conn.query(query.replace(/\?(?:{[\w()]+})?v(\d+)\?/g, '$$$1'), values),
-			options
-		)
-	,
+Object.assign(krauter, {
+	pg: Object.assign((conn, options) => krauter(krauter.pg.executor(conn), options), {
+		executor: conn => (query, values) => conn.query(query.replace(/\?param(\d+)\?/g, "$$$1"), values)
+	}),
 	
-	mysql: (conn, options) =>
-		module.exports(
-			(query, values) => new Promise((resolve, reject) =>
-				conn.query(query.replace(/\?({[\w()]+})?v\d+\?/g, '?'), values, (err, results, fields) =>
-					err ? reject(err) : resolve(Object.assign(results, {fields}))
-				)
-			),
-			options
+	mysql: Object.assign((conn, options) => krauter(krauter.mysql.executor(conn), options), {
+		executor: conn => (query, values) => new Promise((resolve, reject) =>
+			conn.query(query.replace(/\?param\d+\?/g, "?"), values, (err, results, fields) =>
+				err ? reject(err) : resolve(Object.assign(results, {fields}))
+			)
 		)
-	,
+	}),
 	
-	mssql: (conn, options) => {
-		global[privates].mssql = global[privates].mssql || (options && options.mssql) || require("mssql");
-		
-		return module.exports(
-			(query, values, types) => {
+	mssql: Object.assign((conn, options) => krauter(krauter.mssql.executor(conn), options), {
+		executor: conn => {
+			const mssql = require("mssql");
+			
+			function getMssqlType(type) {
+				const property = mssql[type.property];
+				return type.arguments ? property(... type.arguments.split(",").map(arg => +arg.trim())) : property;
+			}
+			
+			return (query, values, types) => {
 				const request = conn.request();
-				for(let i = 0; i < values.length; i++) request.input("v" + i, ... (types[i] ? [eval("global[privates].mssql." + types[i]), values[i]] : [values[i]]));
-				return request.query(query.replace(/\?({[\w()]+})?(v\d+)\?/g, '@$1'));
-			},
-			options
-		);
-	},
+				for(let i = 0; i < values.length; i++) request.input("param" + i, ... (types[i].property ? [getMssqlType(types[i]), values[i]] : [values[i]]));
+				return request.query(query.replace(/\?(param\d+)\?/g, "@$1"));
+			};
+		}
+	}),
 	
-	sqlite3: (conn, options) =>
-		module.exports(
-			(query, values) => new Promise((resolve, reject) =>
-				conn.query(query.replace(/\?({[\w()]+})?v\d+\?/g, '?'), values, (err, rows) =>
-					err ? reject(err) : resolve(rows)
-				)
-			),
-			options
+	sqlite3: Object.assign((conn, options) => krauter(krauter.sqlite3.executor(conn), options), {
+		executor: conn => (query, values) => new Promise((resolve, reject) =>
+			conn.query(query.replace(/\?param\d+\?/g, "?"), values, (err, rows) =>
+				err ? reject(err) : resolve(rows)
+			)
 		)
+	})
 });
+
+module.exports = krauter;
