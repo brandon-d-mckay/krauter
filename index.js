@@ -20,7 +20,7 @@ methods.forEach(method =>
 class Krauter {
 	constructor(execute, options) {
 		const krauter = (req, res, next) => krauter[privates].router(req, res, err => {
-			if(!res.finished && err === undefined) res.send(req.data); // `err === null` if `next('router')` was called
+			if(!res.finished && req.matched && err === undefined) res.send(req.data); // `err === null` if `next('router')` was called
 			else next(err);
 		});
 		
@@ -40,7 +40,7 @@ class Krauter {
 }
 
 methods.forEach(method => Krauter.prototype[method] = function(path, ... args) {
-	this[privates].router[method](path, args.map(arg => {
+	this[privates].router[method](path, (req, res, next) => { req.matched = true; next(); }, args.map(arg => {
 		if(arg === null) {
 			return (req, res, next) => {
 				delete req.data;

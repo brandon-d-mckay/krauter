@@ -1,7 +1,7 @@
 # krauter
 
-![npm](https://img.shields.io/npm/v/krauter.svg)
-![David](https://img.shields.io/david/brandon-d-mckay/krauter.svg)
+[![npm](https://img.shields.io/npm/v/krauter.svg)](https://npmjs.com/package/krauter)
+[![David](https://img.shields.io/david/brandon-d-mckay/krauter.svg)](https://david-dm.org/brandon-d-mckay/krauter)
 
 *krauter* allows you to quickly create data-backed web services by configuring an *Express* router with a database connection and automatically producing parameterized query middleware from strings and objects. Middleware can also be produced from integers (sets the HTTP response status code), unary functions (sets the value of `req.data`), and `null` (deletes the value of `req.data`).
 
@@ -117,7 +117,7 @@ api.put('/products/:productId/reviews/:userId',
 
 ### Automatic Responses
 
-Each `Krauter` automatically sends a response with `req.data` as the body if the request has gone unanswered. This can be bypassed with a call to `next('router')` within a middleware function.
+Each `Krauter` automatically sends a response with `req.data` as the body if the request previously matched a route but has not been answered. This can be bypassed by calling `next('router')` within a middleware function.
 
 ## Contributing
 Check out the [issues](https://github.com/brandon-d-mckay/krauter/issues) page or make a [pull request](https://github.com/brandon-d-mckay/krauter/pulls) to contribute!
