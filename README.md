@@ -2,6 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/krauter.svg)](https://npmjs.com/package/krauter)
 [![David](https://img.shields.io/david/brandon-d-mckay/krauter.svg)](https://david-dm.org/brandon-d-mckay/krauter)
+[![node](https://img.shields.io/node/v/krauter.svg)](https://nodejs.org/en/download)
 
 *krauter* allows you to quickly create data-backed web services by configuring an *Express* router with a database connection and automatically producing parameterized query middleware from strings and objects. Middleware can also be produced from integers (sets the HTTP response status code), unary functions (sets the value of `req.data`), and `null` (deletes the value of `req.data`).
 
