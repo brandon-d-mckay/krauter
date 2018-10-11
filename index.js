@@ -142,7 +142,7 @@ Object.assign(krauter, {
 			
 			return (query, values, types) => {
 				const request = conn.request();
-				for(let i = 0; i < values.length; i++) request.input("param" + i, ... (types[i].property ? [getMssqlType(types[i]), values[i]] : [values[i]]));
+				for(let i = 0; i < values.length; i++) request.input(`param${i + 1}`, ... (types[i].property ? [getMssqlType(types[i]), values[i]] : [values[i]]));
 				return request.query(query.replace(/\?(param\d+)\?/g, "@$1"));
 			};
 		}
