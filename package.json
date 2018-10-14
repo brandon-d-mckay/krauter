@@ -1,6 +1,6 @@
 {
 	"name": "krauter",
-	"version": "3.1.7",
+	"version": "3.1.9",
 	"description": "An Express router that generates middleware for quickly creating data-driven web services",
 	"keywords": [
 		"express",
@@ -21,18 +21,52 @@
 		"sqlite",
 		"sqlite3"
 	],
-	"homepage": "https://github.com/brandon-d-mckay/krauter#readme",
+	"homepage": "https://brandon-d-mckay.github.io/krauter",
 	"repository": "brandon-d-mckay/krauter",
 	"author": "Brandon D. McKay <brandon.d.mckay@gmail.com> (https://linkedin.com/in/brandon-d-mckay)",
 	"license": "MIT",
+	"engines": {
+		"node": ">= 0.10.0"
+	},
+	"main": "index.js",
+	"scripts": {
+		"lint": "eslint .",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
 	"dependencies": {
 		"express": "^4.16.3",
 		"methods": "^1.1.2"
 	},
-	"devDependencies": {},
-	"scripts": {},
-	"main": "index",
-	"engines": {
-		"node": ">= 0.10.0"
+	"devDependencies": {
+		"eslint": "^5.7.0"
+	},
+	"eslintConfig": {
+		"env": {
+			"node": true,
+			"es6": true
+		},
+		"extends": "eslint:recommended",
+		"parserOptions": {
+			"ecmaVersion": 2018,
+			"sourceType": "module"
+		},
+		"rules": {
+			"linebreak-style": [
+				"error",
+				"unix"
+			],
+			"indent": [
+				"error",
+				"tab"
+			],
+			"semi": [
+				"error",
+				"always"
+			],
+			"quotes": [
+				"error",
+				"single"
+			]
+		}
 	}
 }
