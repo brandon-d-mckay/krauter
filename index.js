@@ -12,7 +12,7 @@ class Kraut {
 }
 
 methods.forEach(method =>
-	Kraut.prototype[method] = function(... args) {
+	Kraut.prototype[method] = function (... args) {
 		this[privates].krauter[method](this[privates].path, ... args);
 		return this;
 	}
@@ -40,7 +40,7 @@ class Krauter {
 	}
 }
 
-methods.forEach(method => Krauter.prototype[method] = function(path, ... args) {
+methods.forEach(method => Krauter.prototype[method] = function (path, ... args) {
 	this[privates].router[method](path, (req, res, next) => { req.matched = true; next(); }, args.map(arg => {
 		if(arg === null) {
 			return (req, res, next) => {
@@ -49,6 +49,22 @@ methods.forEach(method => Krauter.prototype[method] = function(path, ... args) {
 			};
 		}
 		
+		else if(typeof arg === 'function' && arg.length <= 1) {
+			return (req, res, next) => {
+				const data = req.data;
+				req.next = req.data = undefined;
+				
+				try {
+					req.data = arg({req, res, data});
+				}
+				finally {
+					req.next = next;
+				}
+				
+				next();
+			};
+		}
+
 		else if(typeof arg === 'string') {
 			return (req, res, next) => {
 				this[privates].execute(... parse(arg, req)).then(result => {
@@ -73,22 +89,6 @@ methods.forEach(method => Krauter.prototype[method] = function(path, ... args) {
 			};
 		}
 		
-		else if(typeof arg === 'function' && arg.length <= 1) {
-			return (req, res, next) => {
-				const data = req.data;
-				req.next = req.data = undefined;
-				
-				try {
-					req.data = arg({req, res, data});
-				}
-				finally {
-					req.next = next;
-				}
-				
-				next();
-			};
-		}
-
 		else if(typeof arg === 'number') {
 			return (req, res, next) => {
 				res.status(arg);
@@ -103,7 +103,7 @@ methods.forEach(method => Krauter.prototype[method] = function(path, ... args) {
 });
 
 ['use', 'param'].forEach(method =>
-	Krauter.prototype[method] = function(... args) {
+	Krauter.prototype[method] = function (... args) {
 		this[privates].router[method](... args);
 	}
 );
