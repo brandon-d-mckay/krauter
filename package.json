@@ -1,6 +1,6 @@
 {
 	"name": "krauter",
-	"version": "3.1.11",
+	"version": "3.1.12",
 	"description": "An Express router that generates middleware for quickly creating data-driven web services",
 	"keywords": [
 		"express",
