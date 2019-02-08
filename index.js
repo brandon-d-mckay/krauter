@@ -2,6 +2,7 @@ const express = require('express');
 const methods = require('methods').concat('all');
 const privates = Symbol();
 
+// Replaces Express `Route` class
 class Kraut {
 	constructor(krauter, path) {
 		this[privates] = {
@@ -11,6 +12,7 @@ class Kraut {
 	}
 }
 
+// Create `Route` delegate methods
 methods.forEach(method =>
 	Kraut.prototype[method] = function (... args) {
 		this[privates].krauter[method](this[privates].path, ... args);
@@ -18,8 +20,10 @@ methods.forEach(method =>
 	}
 );
 
+// Replaces Express `Router` class
 class Krauter {
 	constructor(execute, options) {
+		// Pass requests along to the internal `Router`
 		const krauter = (req, res, next) => krauter[privates].router(req, res, err => {
 			if(!res.finished && req.matched && err === undefined) res.send(req.data); // `err === null` if `next('router')` was called
 			else next(err);
@@ -40,8 +44,10 @@ class Krauter {
 	}
 }
 
+// Create `Router` delegate methods
 methods.forEach(method => Krauter.prototype[method] = function (path, ... args) {
 	this[privates].router[method](path, (req, res, next) => { req.matched = true; next(); }, args.map(arg => {
+		// `null` => clears `req.data`
 		if(arg === null) {
 			return (req, res, next) => {
 				delete req.data;
@@ -49,9 +55,10 @@ methods.forEach(method => Krauter.prototype[method] = function (path, ... args) 
 			};
 		}
 		
+		// unary function => sets `req.data`
 		else if(typeof arg === 'function' && arg.length <= 1) {
 			return (req, res, next) => {
-				const data = req.data;
+				const {data} = req;
 				req.next = req.data = undefined;
 				
 				try {
@@ -64,7 +71,8 @@ methods.forEach(method => Krauter.prototype[method] = function (path, ... args) 
 				next();
 			};
 		}
-
+		
+		// string => queries the executor and sets `req.data` with the return value
 		else if(typeof arg === 'string') {
 			return (req, res, next) => {
 				this[privates].execute(... parse(arg, req)).then(result => {
@@ -74,6 +82,7 @@ methods.forEach(method => Krauter.prototype[method] = function (path, ... args) 
 			};
 		}
 		
+		// object => queries each property to the executor and inserts the return value into `req.data` with the same key
 		else if(typeof arg === 'object') {
 			return (req, res, next) => {
 				const results = {};
@@ -89,6 +98,7 @@ methods.forEach(method => Krauter.prototype[method] = function (path, ... args) 
 			};
 		}
 		
+		// number => sets the HTTP response status code
 		else if(typeof arg === 'number') {
 			return (req, res, next) => {
 				res.status(arg);
@@ -108,18 +118,20 @@ methods.forEach(method => Krauter.prototype[method] = function (path, ... args) 
 	}
 );
 
-function parse(string, req, values = [], types = []) {
+// Parses references from the input string and returns their resolved values with a parameterized string
+function parse(input, req, values = [], metadata = []) {
 	return [
-		string.replace(/(^|[^:]):(?:{(\w+)(?:\(([\d, ]*)\))?})?([\w]+(?:\.[\w]+)*):/g, (match, precedingChar, typeProperty, typeArguments, reference) =>
-			precedingChar + '?param' + (0&types.push({property: typeProperty, arguments: typeArguments}) || values.push(reference.split('.').reduce((o, p) => o[p], req))) + '?'
+		input.replace(/(?<!:):(?:{(\w+)(?:\(([\d, ]*)\))?})?([\w]+(?:\.[\w]+)*):/g, (match, type, options, reference) =>
+			`?param${values.push(reference.split('.').reduce((o, p) => o[p], req)) && metadata.push({type, options})}?`
 		),
 		values,
-		types
+		metadata
 	];
 }
 
 const krauter = (... args) => new Krauter(... args);
 
+// npm package integrations
 Object.assign(krauter, {
 	pg: Object.assign((conn, options) => krauter(krauter.pg.executor(conn), options), {
 		executor: conn => (query, values) => conn.query(query.replace(/\?param(\d+)\?/g, '$$$1'), values)
@@ -134,19 +146,16 @@ Object.assign(krauter, {
 	}),
 	
 	mssql: Object.assign((conn, options) => krauter(krauter.mssql.executor(conn), options), {
-		executor: conn => {
-			const mssql = require('mssql');
-			
-			function getMssqlType(type) {
-				const property = mssql[type.property];
-				return type.arguments ? property(... type.arguments.split(',').map(arg => +arg.trim())) : property;
-			}
-			
-			return (query, values, types) => {
+		executor: (conn, mssql = require('mssql')) => {
+			return (query, values, metadata) => {
 				const request = conn.request();
-				for(let i = 0; i < values.length; i++) request.input(`param${i + 1}`, ... (types[i].property ? [getMssqlType(types[i]), values[i]] : [values[i]]));
+				for(let i = 0; i < values.length; i++) request.input(`param${i + 1}`, ... getMssqlType(metadata[i]), values[i]);
 				return request.query(query.replace(/\?(param\d+)\?/g, '@$1'));
 			};
+			
+			function getMssqlType(metadata, type = mssql[metadata.type]) {
+				return type ? [metadata.options ? type(... metadata.options.split(',').map(arg => +arg.trim())) : type] : [];
+			}
 		}
 	}),
 	

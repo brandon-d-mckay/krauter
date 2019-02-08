@@ -3,7 +3,7 @@ const sinon = require('sinon');
 const {request: Request, response: Response} = require('express');
 
 describe('krauter', () => {
-	it('should replace `null` with middleware that deletes `req.data`', () => {
+	it('should replace `null` with middleware that clears `req.data`', () => {
 		const before = {};
 		let after;
 		
@@ -22,7 +22,7 @@ describe('krauter', () => {
 		expect(after).to.be.undefined;
 	});
 	
-	it('should replace a unary function with middleware that deletes and sets `req.data`', () => {
+	it('should replace a unary function with middleware that sets `req.data`', () => {
 		const before = {};
 		let input;
 		const output = {};
@@ -44,7 +44,7 @@ describe('krauter', () => {
 		expect(after).to.equal(output);
 	});
 	
-	it('should replace a string with middleware that queries it to the executor and sets `req.data` with the returned value', async () => {
+	it('should replace a string with middleware that queries the executor and sets `req.data` with the return value', async () => {
 		const before = undefined;
 		const query = 'test';
 		const returned = {};
@@ -70,7 +70,7 @@ describe('krauter', () => {
 		expect(after).to.equal(returned);
 	});
 	
-	it('should replace an object with middleware that queries each property to the executor and sets the returned value to `req.data` with the same key', async () => {
+	it('should replace an object with middleware that queries each property to the executor and inserts the return value into `req.data` with the same key', async () => {
 		const before = undefined;
 		const queries = {test1: 'test1', test2: 'test2', test3: 'test3'};
 		const returned = {test1: {}, test2: {}, test3: {}};

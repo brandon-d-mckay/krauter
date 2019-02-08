@@ -5,7 +5,7 @@
 [![David](https://img.shields.io/david/brandon-d-mckay/krauter.svg)](https://david-dm.org/brandon-d-mckay/krauter)
 [![npm](https://img.shields.io/npm/dt/krauter.svg)](https://github.com/brandon-d-mckay/krauter/archive/master.zip)
 
-*krauter* allows you to quickly create data-backed web services by configuring an [*Express*](https://github.com/expressjs/express) router with a database connection and automatically producing parameterized query middleware from strings and objects. Middleware can also be produced from integers (sets the HTTP response status code), unary functions (sets the value of `req.data`), and `null` (deletes the value of `req.data`).
+*krauter* allows you to quickly create data-backed web services by configuring an [*Express*](https://github.com/expressjs/express) router with a database connection and automatically producing parameterized query middleware from strings and objects. Middleware can also be produced from integers (sets the HTTP response status code), unary functions (sets the value of `req.data`), and `null` (clears the value of `req.data`).
 
 It currently supports hassle-free integration with PostgreSQL ([*pg*](https://github.com/brianc/node-postgres)), MySQL ([*mysql*](https://github.com/mysqljs/mysql)), SQL Server ([*mssql*](https://github.com/tediousjs/node-mssql)), and SQLite ([*sqlite3*](https://github.com/mapbox/node-sqlite3)).
 
@@ -47,7 +47,7 @@ const api = krauter.mysql(pool);
 A `Krauter` can also be initialized with a custom executor function:
 
 ```javascript
-const api = krauter((query, values) => new Promise((resolve, reject) => {...}));
+const api = krauter((query, values) => new Promise((resolve, reject) => { /* ... */ }));
 ```
 
 ## Usage
