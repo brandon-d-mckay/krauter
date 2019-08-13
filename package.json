@@ -1,6 +1,6 @@
 {
 	"name": "krauter",
-	"version": "3.1.13",
+	"version": "3.1.14",
 	"description": "An Express router that generates middleware for quickly creating data-driven web services",
 	"keywords": [
 		"express",
@@ -27,7 +27,7 @@
 	"author": "Brandon D. McKay <brandon.d.mckay@gmail.com> (https://linkedin.com/in/brandon-d-mckay)",
 	"license": "MIT",
 	"engines": {
-		"node": ">= 0.10.0"
+		"node": ">= 9.0.0"
 	},
 	"main": "index.js",
 	"scripts": {
@@ -35,172 +35,17 @@
 		"test": "mocha test.js"
 	},
 	"dependencies": {
-		"express": "^4.16.4",
+		"express": "^4.17.1",
 		"methods": "^1.1.2"
 	},
 	"devDependencies": {
 		"chai": "^4.2.0",
-		"eslint": "^5.13.0",
-		"mocha": "^5.2.0",
-		"mssql": "^4.3.1",
-		"mysql": "^2.16.0",
-		"pg": "^7.8.0",
-		"sinon": "^7.2.3",
-		"sqlite3": "^4.0.6"
-	},
-	"eslintConfig": {
-		"env": {
-			"node": true,
-			"es6": true
-		},
-		"extends": "eslint:recommended",
-		"parserOptions": {
-			"ecmaVersion": 2018,
-			"sourceType": "module"
-		},
-		"rules": {
-			"no-useless-escape": [
-				"error"
-			],
-			"indent": [
-				"error",
-				"tab"
-			],
-			"linebreak-style": [
-				"error",
-				"unix"
-			],
-			"eol-last": [
-				"error",
-				"always"
-			],
-			"quotes": [
-				"error",
-				"single"
-			],
-			"semi": [
-				"error",
-				"always"
-			],
-			"semi-spacing": [
-				"error",
-				{
-					"before": false,
-					"after": true
-				}
-			],
-			"semi-style": [
-				"error",
-				"last"
-			],
-			"comma-spacing": [
-				"error",
-				{
-					"before": false,
-					"after": true
-				}
-			],
-			"comma-dangle": [
-				"error",
-				"never"
-			],
-			"spaced-comment": [
-				"error",
-				"always"
-			],
-			"computed-property-spacing": [
-				"error",
-				"never"
-			],
-			"object-curly-spacing": [
-				"error",
-				"never"
-			],
-			"space-in-parens": [
-				"error",
-				"never"
-			],
-			"space-unary-ops": [
-				"error",
-				{
-					"words": true,
-					"nonwords": false
-				}
-			],
-			"space-infix-ops": [
-				"error",
-				{
-					"int32Hint": true
-				}
-			],
-			"rest-spread-spacing": [
-				"error",
-				"always"
-			],
-			"arrow-spacing": [
-				"error",
-				{
-					"before": true,
-					"after": true
-				}
-			],
-			"space-before-function-paren": [
-				"error",
-				{
-					"anonymous": "always",
-					"named": "never",
-					"asyncArrow": "always"
-				}
-			],
-			"generator-star-spacing": [
-				"error",
-				"after"
-			],
-			"func-call-spacing": [
-				"error",
-				"never"
-			],
-			"space-before-blocks": [
-				"error",
-				"always"
-			],
-			"switch-colon-spacing": [
-				"error",
-				{
-					"after": true,
-					"before": false
-				}
-			],
-			"prefer-destructuring": [
-				"error"
-			],
-			"prefer-spread": [
-				"error"
-			],
-			"prefer-object-spread": [
-				"error"
-			],
-			"no-useless-computed-key": [
-				"error"
-			],
-			"prefer-const": [
-				"error",
-				{
-					"destructuring": "any",
-					"ignoreReadBeforeAssign": false
-				}
-			],
-			"no-var": [
-				"error"
-			],
-			"eqeqeq": [
-				"error",
-				"always"
-			],
-			"yoda": [
-				"error",
-				"never"
-			]
-		}
+		"eslint": "^6.1.0",
+		"mocha": "^6.2.0",
+		"mssql": "^5.1.0",
+		"mysql": "^2.17.1",
+		"pg": "^7.12.1",
+		"sinon": "^7.4.1",
+		"sqlite3": "^4.0.9"
 	}
 }
