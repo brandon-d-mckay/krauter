@@ -1,26 +1,8 @@
 {
 	"name": "krauter",
-	"version": "3.1.14",
+	"version": "3.1.15",
 	"description": "An Express router that generates middleware for quickly creating data-driven web services",
-	"keywords": [
-		"express",
-		"backend",
-		"api",
-		"web services",
-		"routing",
-		"middleware",
-		"database",
-		"promise",
-		"query",
-		"sql",
-		"postgresql",
-		"pg",
-		"mysql",
-		"sql server",
-		"mssql",
-		"sqlite",
-		"sqlite3"
-	],
+	"keywords": ["express", "backend", "api", "web services", "routing", "middleware", "database", "promise", "query", "sql", "postgresql", "pg", "mysql", "sql server", "mssql", "sqlite", "sqlite3"],
 	"homepage": "https://brandon-d-mckay.github.io/krauter",
 	"bugs": "https://github.com/brandon-d-mckay/krauter/issues",
 	"repository": "brandon-d-mckay/krauter",
@@ -40,12 +22,12 @@
 	},
 	"devDependencies": {
 		"chai": "^4.2.0",
-		"eslint": "^6.1.0",
+		"eslint": "^6.2.2",
 		"mocha": "^6.2.0",
 		"mssql": "^5.1.0",
 		"mysql": "^2.17.1",
 		"pg": "^7.12.1",
 		"sinon": "^7.4.1",
-		"sqlite3": "^4.0.9"
+		"sqlite3": "^4.1.0"
 	}
 }

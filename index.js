@@ -34,9 +34,7 @@ class Krauter {
 			execute
 		};
 		
-		Object.setPrototypeOf(krauter, Krauter.prototype);
-		
-		return krauter;
+		return Object.setPrototypeOf(krauter, Krauter.prototype);
 	}
 	
 	route(path) {
@@ -105,7 +103,7 @@ methods.forEach(method => Krauter.prototype[method] = function (path, ... args) 
 				next();
 			};
 		}
-
+		
 		else return arg;
 	}));
 	
