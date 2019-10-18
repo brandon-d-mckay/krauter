@@ -1,9 +1,11 @@
-# krauter
+# krauter <sup>[![version][version-badge]][npm-url]</sup>
 
-[![Travis (.org)](https://img.shields.io/travis/brandon-d-mckay/krauter.svg)](https://travis-ci.org/brandon-d-mckay/krauter)
-[![npm](https://img.shields.io/npm/v/krauter.svg)](https://npmjs.com/package/krauter)
-[![David](https://img.shields.io/david/brandon-d-mckay/krauter.svg)](https://david-dm.org/brandon-d-mckay/krauter)
-[![npm](https://img.shields.io/npm/dt/krauter.svg)](https://github.com/brandon-d-mckay/krauter/archive/master.zip)
+[![build status][build-badge]][build-url]
+[![dependency status][dependencies-badge]][dependencies-url]
+[![license][license-badge]][license-url]
+[![downloads][downloads-badge]][downloads-url]
+
+[![npm][npm-badge]][npm-url]
 
 *krauter* allows you to quickly create data-backed web services by configuring an [*Express*](https://github.com/expressjs/express) router with a database connection and automatically producing parameterized query middleware from strings and objects. Middleware can also be produced from integers (sets the HTTP response status code), unary functions (sets the value of `req.data`), and `null` (clears the value of `req.data`).
 
@@ -89,21 +91,25 @@ api.post('/products',
 
 ### Transformations of `req.data`
 
-When a unary function is encountered, it is replaced with a middleware function that will call it with the supplied argument being a single object containing properties `req`, `res`, and `data`, where the value of `data` is taken (and deleted) from `req.data`. The return value of the unary function is then subsequently set to `req.data`.
+When a unary function is encountered, it is replaced with a middleware function that will call it with the supplied argument being a single object containing properties `req`, `res`, and `data`, where the value of `data` is taken (and removed) from `req.data`. The value returned from the unary function is then subsequently set to `req.data` (unless a `Query` object is returned... [see below](#returning-another-query)). 
 
-The parameters usually found in a middleware function can be defined within a unary function in a syntactically similar manner by using destructuring assignments and unpacking them from the single object argument.
+A unary function can be defined in a syntactically similar manner as a typical middleware function by using destructuring assignments and unpacking them from the single object argument. 
 
 ```javascript
 api.get('/orders/:id',
     authenticate,
     'SELECT * FROM orders WHERE id = :params.id:',
-    ({req, res, data: [{confirmedUtc, ... rest}]}) =>
-        ({confirmedLocal: new Date(confirmedUtc).toLocaleString(req.user.language, {timeZone: req.user.timeZone}), ... rest}));
+    ({req, res, data: [{confirmedUtc, ... order}]}) =>
+        ({confirmedLocal: new Date(confirmedUtc).toLocaleString(req.user.language, {timeZone: req.user.timeZone}), ... order}));
 ```
+
+##### Returning another `Query`
+
+*krauter* exposes a `Query` global constructor that can be used to return a value from within a unary function which will be processed just like a normal `Krauter` HTTP method argument. You can think of it as like returning a `Promise` from within a `Promise.prototype.then()` handler... a unary function that returns a `Query` will instead return the result from executing the `Query`. This allows for the building of more dynamic queries which would otherwise be very difficult to create using only variable expansion.
 
 ##### Clearing `req.data`
 
-When `null` is encountered, it is replaced with a middleware function that deletes the value of `req.data`.
+When `null` is encountered, it is replaced with a middleware function that removes the value of `req.data`.
 
 ### HTTP Response Status Codes
 
@@ -119,7 +125,33 @@ api.put('/products/:productId/reviews/:userId',
 
 ### Automatic Responses
 
-Each `Krauter` automatically sends a response with `req.data` as the body if the request previously matched a route but has not been answered. This can be bypassed by calling `next('router')` within a middleware function.
+Each `Krauter` automatically sends a response with `req.data` as the body if the request previously matched a route but has not been answered. This can be bypassed singularly by calling `next('router')` within a middleware function, or completely by setting the `automatic` option to `false` when constructing your `Krauter`.
+
+```javascript
+const api = krauter(executor, {automatic: false});
+```
+
+## Testing
+
+Clone the repo locally, and then:
+
+```shell
+npm install
+npm test
+```
 
 ## Contributing
+
 Check out the [issues](https://github.com/brandon-d-mckay/krauter/issues) page or make a [pull request](https://github.com/brandon-d-mckay/krauter/pulls) to contribute!
+
+[version-badge]: http://versionbadg.es/brandon-d-mckay/krauter.svg
+[npm-badge]: https://nodei.co/npm/krauter.png
+[npm-url]: https://npmjs.org/package/krauter
+[build-badge]: https://img.shields.io/travis/brandon-d-mckay/krauter.svg
+[build-url]: https://travis-ci.org/brandon-d-mckay/krauter
+[dependencies-badge]: https://img.shields.io/david/brandon-d-mckay/krauter.svg
+[dependencies-url]: https://david-dm.org/brandon-d-mckay/krauter
+[license-badge]: http://img.shields.io/npm/l/krauter.svg?color=informational
+[license-url]: LICENSE
+[downloads-badge]: https://img.shields.io/npm/dt/krauter.svg
+[downloads-url]: https://github.com/brandon-d-mckay/krauter/archive/master.zip

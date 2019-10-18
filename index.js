@@ -12,7 +12,7 @@ class Kraut {
 	}
 }
 
-// Create `Route` delegate methods
+// Add `Route` delegate methods
 methods.forEach(method =>
 	Kraut.prototype[method] = function (... args) {
 		this[privates].krauter[method](this[privates].path, ... args);
@@ -22,10 +22,10 @@ methods.forEach(method =>
 
 // Replaces Express `Router` class
 class Krauter {
-	constructor(execute, options) {
+	constructor(execute, {automatic = true, ... options} = {}) {
 		// Pass requests along to the internal `Router`
 		const krauter = (req, res, next) => krauter[privates].router(req, res, err => {
-			if(!res.finished && req.matched && err === undefined) res.send(req.data); // `err === null` if `next('router')` was called
+			if (automatic && req.matched && !res.finished && err === undefined) res.send(req.data); // `err === null` if `next('router')` was called
 			else next(err);
 		});
 		
@@ -42,90 +42,107 @@ class Krauter {
 	}
 }
 
-// Create `Router` delegate methods
-methods.forEach(method => Krauter.prototype[method] = function (path, ... args) {
-	this[privates].router[method](path, (req, res, next) => { req.matched = true; next(); }, args.map(arg => {
-		// `null` => clears `req.data`
-		if(arg === null) {
-			return (req, res, next) => {
-				delete req.data;
-				next();
-			};
-		}
-		
-		// unary function => sets `req.data`
-		else if(typeof arg === 'function' && arg.length <= 1) {
-			return (req, res, next) => {
-				const {data} = req;
-				req.next = req.data = undefined;
-				
-				try {
-					req.data = arg({req, res, data});
-				}
-				finally {
-					req.next = next;
-				}
-				
-				next();
-			};
-		}
-		
-		// string => queries the executor and sets `req.data` with the return value
-		else if(typeof arg === 'string') {
-			return (req, res, next) => {
-				this[privates].execute(... parse(arg, req)).then(result => {
-					req.data = result;
-					next();
-				}).catch(next);
-			};
-		}
-		
-		// object => queries each property to the executor and inserts the return value into `req.data` with the same key
-		else if(typeof arg === 'object') {
-			return (req, res, next) => {
-				const results = {};
-				
-				Promise.all(Object.keys(arg).map(key =>
-					this[privates].execute(... parse(arg[key], req)).then(result => {
-						results[key] = result;
-					}))
-				).then(() => {
-					req.data = results;
-					next();
-				}).catch(next);
-			};
-		}
-		
-		// number => sets the HTTP response status code
-		else if(typeof arg === 'number') {
-			return (req, res, next) => {
-				res.status(arg);
-				next();
-			};
-		}
-		
-		else return arg;
-	}));
-	
-	return this;
-});
+// Add `Router` delegate methods
+methods.forEach(method =>
+	Krauter.prototype[method] = function (path, ... args) {
+		this[privates].router[method](path, (req, res, next) => { req.matched = true; next(); }, ... args.map(transform.bind(this)));
+		return this;
+	}
+);
 
 ['use', 'param'].forEach(method =>
 	Krauter.prototype[method] = function (... args) {
 		this[privates].router[method](... args);
+		return this;
 	}
 );
 
-// Parses references from the input string and returns their resolved values with a parameterized string
+function transform(arg) {
+	// `null` => clears `req.data`
+	if (arg === null) {
+		return (req, res, next) => {
+			req.data = undefined;
+			next();
+		};
+	}
+	
+	// unary function => sets `req.data`
+	else if (typeof arg === 'function' && arg.length <= 1) {
+		return (req, res, next) => {
+			const {data} = req;
+			req.next = req.data = undefined;
+			
+			try {
+				req.data = arg({req, res, data});
+			}
+			finally {
+				req.next = next;
+			}
+			
+			if (req.data instanceof Query)
+				transform.bind(this)(req.data[privates].value)(Object.assign(req, {data}), res, next);
+			else
+				next();
+		};
+	}
+	
+	// string => queries the executor and sets `req.data` with the return value
+	else if (typeof arg === 'string') {
+		return (req, res, next) => {
+			this[privates].execute(... parse(arg, req)).then(result => {
+				req.data = result;
+				next();
+			}).catch(next);
+		};
+	}
+	
+	// object => queries each property to the executor and inserts the return value into `req.data` with the same key
+	else if (typeof arg === 'object') {
+		return (req, res, next) => {
+			const results = {};
+			
+			Promise.all(Object.keys(arg).map(key =>
+				this[privates].execute(... parse(arg[key], req)).then(result => {
+					results[key] = result;
+				}))
+			).then(() => {
+				req.data = results;
+				next();
+			}).catch(next);
+		};
+	}
+	
+	// number => sets the HTTP response status code
+	else if (typeof arg === 'number') {
+		return (req, res, next) => {
+			res.status(arg);
+			next();
+		};
+	}
+	
+	else return arg;
+}
+
+// Parses references from the input string and returns their resolved values along with a parameterized string
 function parse(input, req, values = [], metadata = []) {
 	return [
 		input.replace(/(?<!:):(?:{(\w+)(?:\(([\d, ]*)\))?})?([\w]+(?:\.[\w]+)*):/g, (match, type, options, reference) =>
-			`?param${values.push(reference.split('.').reduce((o, p) => o[p], req)) && metadata.push({type, options})}?`
+			`?param${(values.push(reference.split('.').reduce((o, p) => o[p], req)), metadata.push({type, options}))}?`
 		),
 		values,
 		metadata
 	];
 }
+
+class Query {
+	constructor(value) {
+		this[privates] = {
+			value
+		};
+	}
+}
+
+Object.assign(global, {Query});
 
 const krauter = (... args) => new Krauter(... args);
 
@@ -147,7 +164,7 @@ Object.assign(krauter, {
 		executor: (conn, mssql = require('mssql')) => {
 			return (query, values, metadata) => {
 				const request = conn.request();
-				for(let i = 0; i < values.length; i++) request.input(`param${i + 1}`, ... getMssqlType(metadata[i]), values[i]);
+				for (let i = 0; i < values.length; i++) request.input(`param${i + 1}`, ... getMssqlType(metadata[i]), values[i]);
 				return request.query(query.replace(/\?(param\d+)\?/g, '@$1'));
 			};
 			

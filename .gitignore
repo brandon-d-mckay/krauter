@@ -1,4 +1,5 @@
 .idea/
+.vs/
 
 .npmignore
 node_modules/
